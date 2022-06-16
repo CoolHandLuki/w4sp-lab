@@ -3,6 +3,7 @@ import re
 import sys
 import pwd
 import time
+import errno
 
 #docker handling code
 import w4sp
@@ -145,8 +146,8 @@ def runshark():
                 w4sp.runshark('root')
             for ns in NSROOT.ns:
                 if ns.pid == request.form[key]:
-                    print ns.pid
-                    print ns.name
+                    print(ns.pid)
+                    print(ns.name)
                     w4sp.runshark(ns.name)
 
     return 'launched'
@@ -443,7 +444,7 @@ if __name__ == '__main__':
 
     #see if we can run docker
     try:
-        images = subprocess.check_output(['docker', 'images']).split('\n')
+        images = subprocess.check_output(['docker', 'images']).split(b'\n')
     except (OSError,subprocess.CalledProcessError) as e:
 
         #if e is of type subprocess.CalledProcessError, assume docker is installed but service isn't started
@@ -451,7 +452,7 @@ if __name__ == '__main__':
             subprocess.call(['service', 'docker', 'start'])
             images = subprocess.check_output(['docker', 'images']).split('\n')
 
-        elif e.errno == os.errno.ENOENT:
+        elif e.errno == errno.ENOENT:
             # handle file not found error, lets install docker
             subprocess.call(['apt-get', 'update'])
             subprocess.call(['apt-get', 'install', '-y',
@@ -459,25 +460,27 @@ if __name__ == '__main__':
                             'apt-transport-https', 'ca-certificates',
                             'software-properties-common'])
 
-            # check if we already configured docker repos
-            with open('/etc/apt/sources.list', 'ra+') as f:
-                if 'docker' not in f.read():
+            # CHL: Skip adding the repo below and use docker.io for simplicity's sake
+            subprocess.call(['apt-get', 'install', '-y', 'docker.io'])
+            # # check if we already configured docker repos
+            # with open('/etc/apt/sources.list', 'a') as f:
+            #     if 'docker' not in f.read():
 
-                    #adding the docker gpg key and repo
-                    subprocess.call(['wget', 'https://yum.dockerproject.org/gpg',
-                                    '-O', 'docker.gpg'])
+            #         #adding the docker gpg key and repo
+            #         subprocess.call(['wget', 'https://yum.dockerproject.org/gpg',
+            #                         '-O', 'docker.gpg'])
 
-                    subprocess.call(['apt-key', 'add', 'docker.gpg'])
+            #         subprocess.call(['apt-key', 'add', 'docker.gpg'])
 
-                    #add the stretch repo, need to figure out how to map kali versions
-                    #to debian versions
+            #         #add the stretch repo, need to figure out how to map kali versions
+            #         #to debian versions
 
-                    f.write('\ndeb https://apt.dockerproject.org/repo/ debian-stretch main\n')
+            #         f.write('\ndeb https://apt.dockerproject.org/repo/ debian-stretch main\n')
 
-            subprocess.call(['apt-get', 'update'])
-            subprocess.call(['apt-get', '-y', 'install', 'docker-engine'])
-            subprocess.call(['service', 'docker', 'start'])
-            images = subprocess.check_output(['docker', 'images']).split('\n')
+            # subprocess.call(['apt-get', 'update'])
+            # subprocess.call(['apt-get', '-y', 'install', 'docker-engine'])
+            subprocess.call(['systemctl', 'enable --now', 'docker'])
+            images = subprocess.check_output(['docker', 'images']).split(b'\n')
 
         else:
             # Something else went wrong
@@ -488,7 +491,7 @@ if __name__ == '__main__':
     try:
         tmp_n = 0
         for image in images:
-            if 'w4sp/labs' in image:
+            if b'w4sp/labs' in image:
                 tmp_n += 1
         #basic check to see if we have at least six w4sp named images
         if tmp_n > len(os.listdir('images')):
