@@ -2,6 +2,9 @@
 FROM w4sp/labs:base
 
 #install vrrpd, lldpd and quagga
+RUN echo 'deb http://deb.debian.org/debian/ buster main' >> /etc/apt/sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 DCC9EFBF77E11517
+RUN apt-get update
 RUN apt-get install -y vrrpd lldpd quagga
 
 #add the quagga scripts

@@ -1,9 +1,11 @@
 Update for Kali 2022.2 in progress. Currently not all docker images are being build and the lab as a whole is not tested at all.
 
 If you want to run it anyhow run:
-# git clone https://github.com/CoolHandLuki/w4sp-lab
-# cd w4sp-lab
-# sudo python3 w4sp_webapp.py
+```
+git clone https://github.com/CoolHandLuki/w4sp-lab
+cd w4sp-lab
+sudo python3 w4sp_webapp.py
+```
 
 To get everything running up to this point the following was changed:
 - Update print statements to python3

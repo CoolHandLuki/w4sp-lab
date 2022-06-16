@@ -100,8 +100,7 @@ def docker_build(image_path):
         if image != 'base':
             image_name = 'w4sp/labs:' + image
             print(curdir) # docker build -t w4sp/labs:ftp_tel ftp_tel
-            print(['docker', 'build', '-t ' + image + ' ' + image_name])
-            assert subprocess.call(['docker', 'build', '-t', str(image_name) + str(image), image]) == 0
+            assert subprocess.call(['docker', 'build', '-t', image_name, image]) == 0
             
 
     #go back to the working dir

@@ -1,11 +1,11 @@
 #build off of w4sp base image
 FROM w4sp/labs:base
 
-RUN wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
-RUN echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
+RUN wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+RUN echo "deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" | tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
 
 RUN apt-get update -q
-RUN sudo apt-get install elasticsearch
+RUN apt-get install elasticsearch
 RUN apt-get -y install default-jre-headless
 
 ENV KIBANA_VERSION 4.4.1 
