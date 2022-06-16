@@ -1,3 +1,4 @@
+import errno
 import subprocess
 import inspect
 import socket
@@ -10,15 +11,15 @@ import os
 def check_dumpcap():
     """function to ensure that dumpcap has the right capabilities set"""
 
-    dumpcap = r('which dumpcap').strip()
-    caps = r('getcap $dumpcap')
+    dumpcap = subprocess.check_output(['which', 'dumpcap']).strip()
+    caps = subprocess.check_output(['getcap', dumpcap])
 
     if caps == '':
         print('[*] Error, capabilities not set on dumpcap, setting capabilities')
         subprocess.call(['setcap', 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip', dumpcap])
         return
 
-    if 'cap_net_admin' and 'cap_net_raw' in caps.split('=')[1]:
+    if b'cap_net_admin' and b'cap_net_raw' in caps.split(b'=')[0]:
         print('[*] Caps set correctly on dumpcap')
         return
 
@@ -79,7 +80,7 @@ def r(cmd):
             #insert our new one in its place
             cmd.insert(n,v)
 
-    print cmd
+    print(cmd)
     return subprocess.check_output(cmd)
 
 
@@ -88,18 +89,20 @@ def docker_build(image_path):
 
     orig_dir = os.getcwd()
     os.chdir(image_path)
-    print(os.getcwd())
     curdir = os.getcwd()
 
     #first we need to build the base image so we can build the rest
-    r('docker build -t w4sp/labs:base base')
+    assert subprocess.call(['docker', 'build', '-t', 'w4sp/labs:base', 'base']) == 0
 
-    for image in os.walk( os.path.join(curdir,'.')).next()[1]:
+    for image in next(os.walk( os.path.join(curdir,'.')))[1]:
 
         #no point in rebuilding the base image
         if image != 'base':
             image_name = 'w4sp/labs:' + image
-            r('docker build -t $image_name $image')
+            print(curdir) # docker build -t w4sp/labs:ftp_tel ftp_tel
+            print(['docker', 'build', '-t ' + image + ' ' + image_name])
+            assert subprocess.call(['docker', 'build', '-t', str(image_name) + str(image), image]) == 0
+            
 
     #go back to the working dir
     os.chdir(orig_dir)

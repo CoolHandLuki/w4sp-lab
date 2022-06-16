@@ -1,7 +1,7 @@
-#get the base default ubuntu 14.04 image
-FROM ubuntu:14.04
+#get the base default ubuntu 22.04 image
+FROM ubuntu:22.04
 
-MAINTAINER w4sp-book
+LABEL maintainer=cool-hand-luki
 
 #adding a label here so we can easily delete our containers
 LABEL w4sp=true
@@ -11,9 +11,9 @@ ENV DEBIAN_FRONTEND noninteractive
 #things that are nice to have on all images
 RUN apt-get -y update && apt-get -y upgrade
 #RUN apt-get -y install wireshark tshark 
-RUN apt-get -y install bridge-utils ethtool
-RUN apt-get -y install nmap mtr traceroute python wget curl supervisor 
-RUN apt-get -y install python-pip python-dev smbclient
+RUN apt-get -y install bridge-utils ethtool locales
+RUN apt-get -y install nmap mtr traceroute python3 wget curl supervisor 
+RUN apt-get -y install python3-pip python3-dev smbclient
 RUN apt-get -y install iptables 
 
 #set root creds to w4sp:w4spbook and create w4sp user with same password
