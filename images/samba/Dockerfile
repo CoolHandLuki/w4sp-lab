@@ -5,7 +5,7 @@ FROM w4sp/labs:base
 RUN apt-get install -y samba
 
 #set a samba password for the w4sp user to w4spbook
-RUN PASS=w4spbook ; echo ${PASS} | tee - | smbpasswd -a -s w4sp
+RUN PASS=w4spbook ; echo -e ${PASS}\n${PASS}\n | tee - | smbpasswd -a -s w4sp
 
 #add the smbgrp group and add w4sp to the group
 RUN addgroup smbgrp && usermod -a -G smbgrp w4sp

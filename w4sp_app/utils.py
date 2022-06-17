@@ -113,41 +113,41 @@ def docker_clean():
 
     #docker rm -f $(docker ps -aq --filter 'label=w4sp=true')
 
-    out = r('docker ps -aq --filter label=w4sp=true').split('\n')[:-1]
+    out = subprocess.check_output(['docker', 'ps', '-aq', '--filter', 'label=w4sp=true']).split(b'\n')[:-1]
     for c_id in out:
-        r('docker rm -f $c_id')
+        subprocess.call(['docker', 'rm', '-f', c_id])
 
-    for nic in r('ifconfig -a').split('\n\n')[:-1]:
-        nic = nic.split(' ')[0]
-        if nic != 'docker0' and nic != 'eth0' and nic != 'lo' and 'root' not in nic:
+    for nic in subprocess.check_output(['ifconfig', '-a']).split(b'\n\n')[:-1]:
+        nic = nic.split(b' ')[0]
+        if nic != b'docker0' and nic != b'eth0' and nic != b'lo' and b'root' not in nic:
             #try to delete the link, if it fails don't worry about it
             try:
                 r('ip link delete $nic')
             except:
                 pass
 
-    for netns in r('ip netns').split('\n')[:-1]:
-        r('ip netns delete $netns')
+    for netns in subprocess.check_output(['ip', 'netns']).split(b'\n')[:-1]:
+        subprocess.call(['ip', 'netns', 'delete', netns])
 
     #kill old dhclients
     try:
-        r('pkill dhclient')
+        subprocess.call(['pkill', 'dhclient'])
     except:
         pass
 
     #rename root nic to eth0
-    for nic in r('ifconfig -a').split('\n\n')[:-1]:
-        nic = nic.split(' ')[0]
-        if 'root' in nic:
+    for nic in subprocess.check_output(['ifconfig', '-a']).split(b'\n\n')[:-1]:
+        nic = nic.split(b' ')[0]
+        if b'root' in nic:
             try:
-                r('ip link set $nic down')
-                r('ip link set $nic name eth0')
+                subprocess.call(['ip', 'link', 'set', nic, 'down'])
+                subprocess.call(['ip', 'link', 'set', nic, 'name', 'eth0'])
             except:
                 pass
 
-    r('service network-manager start')
-    r('service networking restart')
-    r('service docker restart')
+    subprocess.call(['service', 'network-manager', 'start'])
+    subprocess.call(['service', 'networking', 'restart'])
+    subprocess.call(['service', 'docker', 'restart'])
 
 
 
