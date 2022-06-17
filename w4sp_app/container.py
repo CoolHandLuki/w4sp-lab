@@ -1,3 +1,6 @@
+# from msilib.schema import Error # deprecated according to PEP 594 and not used
+
+from tempita import sub
 from w4sp_app.utils import r, docker_clean
 
 import subprocess
@@ -167,23 +170,23 @@ class root_ns(object):
         #nicname = self.name + '_' + str(tmp_n)
         nicname = container.name + '_' + str(tmp_n)
 
-        r('ip link add $nicname type veth peer name tmp')
-        r('ip link set tmp netns $self.pid')
-        r('ip link set $nicname netns $pid')
+        subprocess.call(['ip', 'link', 'add', nicname, 'type', 'veth', 'peer', 'name', 'tmp'])
+        subprocess.call(['ip', 'link', 'set', 'tmp', 'netns', self.pid])
+        subprocess.call(['ip', 'link', 'set', nicname, 'netns', pid])
 
         #need to research more, but pretty sure checksum offloading was
         #screwing up udp packets.....
         #http://lists.thekelleys.org.uk/pipermail/dnsmasq-discuss/2007q3/001506.html
         #this disables offloading....
         if self.name != 'root':
-            r('ip netns exec $self.name ethtool -K tmp rx off tx off')
+            subprocess.call(['ip', 'netns', 'exec', self.name, 'ethtool', '-K', 'tmp', 'rx', 'off', 'tx', 'off'])
 
         self.enter_ns()
         ###########################################
 
         #rename tmp to match veth peer in other ns
-        r('ip link set dev tmp name $nicname')
-        r('ethtool -K $nicname rx off tx off')
+        subprocess.call(['ip', 'link', 'set', 'dev', 'tmp', 'name', nicname])
+        subprocess.call(['ethtool', '-K', nicname, 'rx', 'off', 'tx', 'off'])
 
         self.exit_ns()
 
@@ -196,7 +199,7 @@ class root_ns(object):
     def setup_wifi(self, phy):
         """mov phy into this containers network namespace"""
 
-        r('iw phy $phy set netns $self.pid')
+        subprocess.call(['iw', 'phy', phy, 'set', 'netns', self.pid])
 
 
     def shutdown(self):
@@ -221,11 +224,11 @@ class container(root_ns):
 
         #start the container and record the container id sleeping randomly to try and improve performance at start
         #time.sleep(random.uniform(1,3))
-        self.id = r('docker run -id --privileged --name $name --hostname $name --net=none $image').strip()
-        self.pid = r("docker inspect -f '{{.State.Pid}}' $self.id").strip().strip("'")
+        self.id = subprocess.getoutput(['docker', 'run', '-id', '--privileged', '--name', name, '--hostname', name, '--net=none', image]).strip()
+        self.pid = subprocess.getoutput(['docker', 'inspect', '-f', '{{.State.Pid}}', self.id]).strip().strip("'")
 
         self.proc_path = '/proc/%s/ns/' % self.pid
-        self.mnt_fd = open(self.proc_path + 'mnt', 'ro')
+        self.mnt_fd = open(self.proc_path + 'mnt', 'r')
         self.var_run = '/var/run/netns/' + self.name     
 
         if not os.path.exists('/var/run/netns'):
@@ -233,16 +236,16 @@ class container(root_ns):
 
         netns = self.proc_path + 'net'
         #link this to /var/run/netns so ip tool can identify the network ns
-        r('ln -s $netns $self.var_run')
+        subprocess.call(['ln', '-s', netns, self.var_run])
 
 
     def dexec(self, cmd):
         """wrapper around docker exec"""
-    
+        raise 'dexec called! Needs to be refactored'
         #docker exec needs cmd a seperate args, not a single string
         cmd = 'docker exec -d $self.id ' + cmd
 
-        r(cmd)
+       # r(cmd)
 
 
     def exit_ns(self):
@@ -254,7 +257,7 @@ class container(root_ns):
     def __del__(self):
         """stop and delete the container"""
 
-        r('docker rm -f $self.id')
+        subprocess.call(['docker', 'rm', '-f', self.id])
 
         try:
             #kill container and remove if it isn't a 'root' container

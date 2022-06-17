@@ -26,7 +26,7 @@ def check_dumpcap():
     else:
         print('[*] Error, capabilities not set correctly on dumpcap, setting capabilities')
         #first lets remove all caps
-        r('setcap -r $dumpcap') 
+        subprocess.call(['setcap', '-r', dumpcap]) 
         subprocess.call(['setcap', 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip', dumpcap])
         return
 
@@ -99,7 +99,7 @@ def docker_build(image_path):
         #no point in rebuilding the base image
         if image != 'base':
             image_name = 'w4sp/labs:' + image
-            print(curdir) # docker build -t w4sp/labs:ftp_tel ftp_tel
+            print(image) # docker build -t w4sp/labs:ftp_tel ftp_tel
             assert subprocess.call(['docker', 'build', '-t', image_name, image]) == 0
             
 
@@ -122,7 +122,7 @@ def docker_clean():
         if nic != b'docker0' and nic != b'eth0' and nic != b'lo' and b'root' not in nic:
             #try to delete the link, if it fails don't worry about it
             try:
-                r('ip link delete $nic')
+                subprocess.call(['ip', 'link', 'delete', nic])
             except:
                 pass
 

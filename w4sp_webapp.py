@@ -183,9 +183,9 @@ def mitm():
 
     for nic in netifaces.interfaces():
         if 'root' in nic:
-            w4sp.r('ip link set $nic down')
-            w4sp.r('ip link set $nic name vic3')
-            w4sp.r('ip link set vic3 up')
+            subprocess.call(['ip', 'link', 'set', nic, 'down'])
+            subprocess.call(['ip', 'link', 'set', nic, 'name', 'vic3'])
+            subprocess.call(['ip', 'link', 'set', 'vic3', 'up'])
 
     return 'ok'
 

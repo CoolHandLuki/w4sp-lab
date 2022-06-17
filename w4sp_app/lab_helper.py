@@ -69,11 +69,11 @@ def setup_sw(sw, base_ip, clients):
     #getting weird failures
     print('added sleep')
     time.sleep(2)
-    r('ip addr add $sw_ip dev br0')
-    r('ip link set br0 up')
+    subprocess.call(['ip', 'addr', 'add', sw_ip, 'dev', 'br0'])
+    subprocess.call(['ip', 'link', 'set', 'br0', 'up'])
 
     #set default gw
-    r('route add default gw $default_gw')
+    subprocess.call(['route', 'add', 'default', 'gw', default_gw])
 
     #need to research more, but pretty sure checksum offloading was
     #screwing up udp packets.....
@@ -91,7 +91,7 @@ def setup_sw(sw, base_ip, clients):
     min_ip = (base_ip % 100).strip('/24')
     max_ip = (base_ip % 200).strip('/24')
     range_opt = '--dhcp-range=%s,%s' % (min_ip, max_ip)
-    r('docker exec $sw_name dnsmasq -E --domain=labs -s labs $router_opt $range_opt')
+    subprocess.call(['docker', 'exec', sw_name, 'dnsmasq', '-E', '--domain=labs', '-s', 'labs', router_opt, range_opt])
 
     #configure the other hosts
     for tmp_n,nicname in enumerate(sw.nics):
@@ -104,12 +104,12 @@ def setup_sw(sw, base_ip, clients):
             ##########################################################
 
             c_ip = base_ip % (11 + tmp_n)
-            r('ip link set $nic down')
-            r('ip addr add $c_ip dev $nic')
-            r('ip link set $nic up')
+            subprocess.call(['ip', 'link', 'set', nic, 'down'])
+            subprocess.call(['ip', 'addr', 'add', c_ip, 'dev', nic])
+            subprocess.call(['ip', 'link', 'set', nic, 'up'])
     
             #lets set the routes, hardcoding dfgw to host .1 in a /24
-            r('route add default gw $default_gw')
+            subprocess.call(['route', 'add', 'default', 'gw', default_gw])
             
             ##########################################################
             client.exit_ns()
@@ -143,7 +143,7 @@ def setup_vrrp(routers):
             vip = get_ip(nic)
 
             #delete default route set during setup_sw()
-            r('ip route del 0/0')
+            subprocess.call(['ip', 'route', 'del', '0/0'])
 
             ####################
             router.exit_ns()
@@ -157,7 +157,7 @@ def setup_vrrp(routers):
             vid = str(vid + vid_base)
 
             #vrrpd -D -i sw2_2 -v 1 -a pw/0xdeadbeef -p 120 10.100.200.1
-            r('docker exec $name vrrpd -d 15 -D -i $nic -v $vid -a pw/0xdeadbeef -p $pri $vip')
+            subprocess.call(['docker', 'exec', name, 'vrrpd', '-d', '15', '-D', '-i', nic, '-v', vid, '-a', 'pw/0xdeadbeef' '-p', pri, vip])
 
 
 def setup_inet(inet, h_if, subnet):
@@ -176,37 +176,37 @@ def setup_inet(inet, h_if, subnet):
     #should only have one nic
     inet_nic = inet.nics[0]
     #move host interface into container netns and delete docker0
-    r('ip link set $h_if netns $name')
+    subprocess.call(['ip', 'link', 'set', h_if, 'netns', name])
     
     #now delete all other interfaces
-    for nic in r('ifconfig -a').split('\n\n')[:-1]:
+    for nic in subprocess.getoutput(['ifconfig', '-a']).split(b'\n\n')[:-1]:
         nic = nic.split(' ')[0]
         if nic != 'lo':
-            r('ip link delete dev $nic')
+            subprocess.call(['ip', 'link', 'delete', 'dev', nic])
 
 
     inet.enter_ns()
     #########################################################################################
 
     #set the special mac and get ip addr
-    r('ip link set dev $inet_nic address $nic_mac')
-    r('dhclient $inet_nic')
+    subprocess.call(['ip', 'link', 'set', 'dev', inet_nic, 'address', nic_mac])
+    subprocess.call(['dhclient', inet_nic])
     #time.sleep(1)
     sub = subnet.strip('/24') 
     old_gw = get_base_subnet(sub) + '.1'
     #delete the old default gw
     #r('ip route del 0/0')
    
-    r('ip route add $subnet via $old_gw')
+    subprocess.call(['ip', 'route', 'add', subnet, 'via', old_gw])
  
-    r('iptables -t nat -A POSTROUTING -o $h_if -j MASQUERADE')
-    r('iptables -A FORWARD -i $h_if -o $inet_nic -m state --state RELATED,ESTABLISHED -j ACCEPT')
-    r('iptables -A FORWARD -i $inet_nic -o $h_if -j ACCEPT')
+    subprocess.call(['iptables', '-t', 'nat', '-A', 'POSTROUTING', '-o', h_if, '-j', 'MASQUERADE'])
+    subprocess.call(['iptables', '-A', 'FORWARD', '-i', h_if, '-o', inet_nic, '-m', 'state', '--state', 'RELATED,ESTABLISHED', '-j', 'ACCEPT'])
+    subprocess.call(['iptables', '-A', 'FORWARD', '-i', inet_nic, '-o', h_if, '-j', 'ACCEPT'])
 
     #########################################################################################
     inet.exit_ns()
 
-    r('docker exec -d $name dhclient $h_if')
+    subprocess.call(['docker', 'exec', '-d', name, 'dhclient', h_if])
     
 
 
@@ -271,7 +271,7 @@ def create_netx(net):
 
         #getting random failures, adding sleep
         time.sleep(2)
-        r('ip addr add $sw_ip dev br0')    
+        subprocess.call(['ip', 'addr', 'add', sw_ip, 'dev', 'br0'])    
     
         #################################
         c(sw).exit_ns()

@@ -1,3 +1,4 @@
+from cairo import SubpixelOrder
 from w4sp_app import *
 import errno
 from multiprocessing import Process
@@ -89,9 +90,9 @@ def setup_network2(h_if):
     #setup inet, just making sure we are in the root ns
     ns_root.enter_ns()
     #rename our interface and move it into inet
-    r('ip link set $h_if down')
-    r('ip link set $h_if name root')
-    r('ip link set root netns inet')
+    subprocess.call(['ip', 'link', 'set', h_if, 'down'])
+    subprocess.call(['ip', 'link', 'set', h_if, 'name', 'root'])
+    subprocess.call(['ip', 'link', 'set', 'root', 'netns inet'])
 
     #connect host to sw1 - hardcoding is bad
     nic = c('sw1').connect(ns_root)
@@ -99,18 +100,18 @@ def setup_network2(h_if):
     c('sw1').enter_ns()
     ###########################
 
-    r('brctl addif br0 $nic')
-    r('ip link set $nic up')
+    subprocess.call(['brctl', 'addif', 'br0', nic])
+    subprocess.call(['ip', 'link', 'set', nic, 'up'])
 
     ########################### 
     ns_root.enter_ns()
 
     #ensure network manager doesn't mess with anything
-    r('service network-manager stop')
-    r('ip link set $nic name w4sp_lab')
+    subprocess.call(['service', 'network-manager', 'stop'])
+    subprocess.call(['ip', 'link', 'set', nic, 'name', 'w4sp_lab'])
     #p = Process(target=r, args=('dhclient -v w4sp_lab',))
     #p.start()
-    r('dhclient -v w4sp_lab')
+    subprocess.call(['dhclient', '-v', 'w4sp_lab'])
     
     c('inet').enter_ns()
     ###############################################
@@ -125,7 +126,7 @@ def setup_network2(h_if):
     while not dfgw_set:
         for ips in c('inet').get_ips():
             if 'inet_0' in ips.keys():
-                r('route add -net $other_net netmask 255.255.255.0 gw $other_gw')
+                subprocess.call(['route', 'add', '-net', other_net, 'netmask', '255.255.255.0', 'gw', other_gw])
                 dfgw_set = True
         
     #############################################
@@ -210,12 +211,12 @@ def setup_network(h_if):
         c(router).enter_ns()
         #######################################
  
-        r('ip route add default via $new_gw')
+        subprocess.call(['ip', 'route', 'add', 'default', 'via', new_gw])
     
         for nic in c(router).nics:
             #we are going to add an artificial delay here
             #add 1ms delay with a 5ms jitter
-            r('tc qdisc add dev $nic root netem delay 1ms 5ms')
+            subprocess.call(['tc', 'qdisc', 'add', 'dev', nic, 'root', 'netem', 'delay', '1ms 5ms'])
     
         ########################################
         c(router).exit_ns()
@@ -241,17 +242,17 @@ def setup_network(h_if):
     c('sw1').enter_ns()
     ###########################
 
-    r('brctl addif br0 $nic')
-    r('ip link set $nic up')
+    subprocess.call(['brctl', 'addif', 'br0', nic])
+    subprocess.call(['ip', 'link', 'set', nic, 'up'])
 
     ########################### 
     ns_root.enter_ns()
 
     #ensure network manager doesn't mess with anything
-    r('service network-manager stop')
-    r('ip link set $nic name w4sp_lab')
+    subprocess.call(['service', 'network-manager', 'stop'])
+    subprocess.call(['ip', 'link', 'set', nic, 'name', 'w4sp_lab'])
     #p = Process(target=r, args=('dhclient -v w4sp_lab',))
     #p.start()
-    r('dhclient -v w4sp_lab')    
+    subprocess.call(['dhclient', '-v', 'w4sp_lab'])    
 
 
